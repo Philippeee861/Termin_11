@@ -1,6 +1,8 @@
-# Logik-Simulator 🔌
+# C++ Digital Simulator 🔌
 
-Ein **C++-basierter Simulator für digitale Logikgatter** - ideal zum Verständnis von Schaltlogik, Speichermanagement und objektorientierten Designmustern.
+[![C++ Automated Tests](https://github.com/dantschi/digisim/actions/workflows/ci.yml/badge.svg)](https://github.com/dantschi/digisim/actions/workflows/ci.yml)
+
+Ein **C++-basierter Simulator für digitale Logikgatter** mit automatisierter CI/CD-Pipeline – ideal zum Verständnis von Schaltlogik, Speichermanagement und DevOps-Konzepten.
 
 ## 📋 Überblick
 
@@ -22,8 +24,11 @@ Dieses Projekt implementiert einen vollständigen Logik-Simulator mit verschiede
 ├── NotGate.h/cpp          # NOT-Gatter-Implementierung
 ├── XorGate.h/cpp          # XOR-Gatter-Implementierung
 ├── NandGate.h/cpp         # NAND-Gatter-Implementierung
-├── main.cpp               # Beispiel-Anwendung
-└── README.md              # Diese Datei
+├── main.cpp               # Automatisierte Test-Suite mit Exit-Codes
+├── README.md              # Diese Datei
+└── .github/
+    └── workflows/
+        └── ci.yml         # GitHub Actions CI/CD Pipeline
 ```
 
 ## 🎯 Kernkonzepte
@@ -37,8 +42,12 @@ Das Projekt demonstriert modernes C++ Speichermanagement mit:
 - Automatische Speicherfreigabe ohne Memory Leaks
 - RAII-Prinzip (Resource Acquisition Is Initialization)
 
-### Observer-Pattern
-Komponenten können über Zeiger beobachtet und ausgelesen werden, ohne das Objekt zu kopieren.
+### CI/CD & Automatisierung
+GitHub Actions triggert automatisch bei jedem `git push`:
+- ✅ Code-Kompilierung
+- ✅ Wahrheitstabellen-Tests (19 automatisierte Tests)
+- ✅ Exit-Code Validierung
+- ✅ Statische Code-Analyse (cppcheck)
 
 ## 🚀 Kompilierung & Ausführung
 
@@ -46,15 +55,65 @@ Komponenten können über Zeiger beobachtet und ausgelesen werden, ohne das Obje
 - C++17 oder höher
 - Ein C++-Compiler (GCC, Clang, MSVC)
 
-### Kompilieren
+### Lokal kompilieren
 ```bash
-g++ -std=c++17 -o simulator *.cpp
-```
-
-### Ausführen
-```bash
+g++ *.cpp -o simulator
 ./simulator
 ```
+
+### Erfolg (Exit-Code 0)
+```
+Test Summary:
+Bestanden: 19 / 19
+========================================
+
+[SUCCESS] Alle Tests bestanden! ✓
+```
+
+### Fehler (Exit-Code 1)
+```
+[FEHLER] Mindestens ein Test fehlgeschlagen!
+Die CI-Pipeline wird dies als FEHLER markieren.
+```
+
+## 🤖 Automatisierte Tests
+
+Die `main.cpp` führt umfassende Wahrheitstabellen-Tests durch:
+
+| Gatter | Tests | Status |
+|--------|-------|--------|
+| AND    | 4     | ✓      |
+| OR     | 4     | ✓      |
+| NOT    | 2     | ✓      |
+| XOR    | 4     | ✓      |
+| NAND   | 4     | ✓      |
+| Integration | 1 | ✓      |
+| **Gesamt** | **19** | **✓** |
+
+## 📊 GitHub Actions Pipeline
+
+Jeden `git push` ausgelöst:
+
+```yaml
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Kompiliere
+        run: g++ *.cpp -o simulator
+      - name: Teste
+        run: ./simulator
+      - name: Static Analysis
+        run: cppcheck --enable=all --error-exitcode=1 *.cpp
+```
+
+Der Status wird oben als Badge angezeigt! ✨
 
 ## 💾 Verwendungsbeispiel
 
@@ -67,12 +126,16 @@ engine.addComponent(std::make_unique<AndGate>("AND-1"));
 engine.addComponent(std::make_unique<OrGate>("OR-1"));
 
 // Schaltung simulieren
-engine.simulate(10);  // 10 Takte simulieren
+engine.doTick();
 ```
 
 ## 📚 Weitere Informationen
 
-Dieses Projekt ist Teil des Moduls **Informatik 2** an der DHBW Stuttgart und behandelt fortgeschrittene C++ Konzepte im praktischen Kontext einer Logik-Simulation.
+Dieses Projekt ist Teil des Moduls **Informatik 2 – Labor 7** an der DHBW Stuttgart und behandelt:
+- Objektorientiertes Programmieren (OOP)
+- Speichermanagement mit Smart Pointers
+- DevOps & Continuous Integration
+- Automatisierte Testausführung
 
 ## 📝 Lizenz
 

@@ -1,0 +1,41 @@
+name: C++ Automated Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Schritt 1: Code auschecken
+      - name: Lade Code auf den Runner
+        uses: actions/checkout@v4
+
+      # Schritt 2: Kompiliere den Simulator
+      - name: Kompiliere den Simulator
+        run: g++ *.cpp -o simulator
+        
+      # Schritt 3: Führe Wahrheitstabellen aus
+      - name: Führe Wahrheitstabellen aus
+        run: ./simulator
+
+  # ========================================================================
+  # ZUSATZAUFGABE 1: Statische Code-Analyse mit cppcheck
+  # ========================================================================
+  static-analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Lade Code auf den Runner
+        uses: actions/checkout@v4
+
+      - name: Installiere cppcheck
+        run: sudo apt-get install -y cppcheck
+
+      - name: Statische Code Analyse (cppcheck)
+        run: cppcheck --enable=all --error-exitcode=1 *.cpp
+        continue-on-error: false

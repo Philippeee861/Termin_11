@@ -11,88 +11,231 @@
 
 /**
  * =====================================================================
- * ZUSATZAUFGABE 1: Der nackte Zeiger (Observer-Pattern)
+ * Labor 7: Automatisierte Tests mit Exit-Codes für CI/CD
  * =====================================================================
  * 
- * Diese Funktion nimmt einen nackten C++-Zeiger und liest den Zustand,
- * OHNE das Objekt zu kopieren oder zu verschieben.
- * Das ist ein "Read-Only Observer" - wie durchs Schlüsselloch schauen!
+ * Diese Wahrheitstabellen-Tests verifizieren alle Gatter-Implementierungen.
+ * Bei Fehler: Exit-Code 1 (FEHLER für die CI-Pipeline)
+ * Bei Erfolg: Exit-Code 0 (GRÜNER HAKEN)
  */
-void printGateInfo(Component* gate) {
-    if (gate == nullptr) {
-        std::cerr << "[ERROR] Ungültiger Zeiger in printGateInfo()" << std::endl;
-        return;
-    }
+
+// Hilfsfunktion: Testet ein Gatter mit gegebener Eingabe und erwartetem Output
+bool testGate(Component* gate, bool inputA, bool inputB, bool expectedOutput, 
+              const std::string& gateName) {
+    gate->setInputA(inputA);
+    gate->setInputB(inputB);
+    bool actualOutput = gate->getOutput();
     
-    std::cout << "\n[GateInfo] Komponenten-Status:" << std::endl;
-    std::cout << "  Input A: " << (gate ? "vorhanden" : "NULL") << std::endl;
-    std::cout << "  Output: " << (gate->getOutput() ? "1 (true)" : "0 (false)") << std::endl;
-    gate->printState();  // Ruft die spezifische printState() des Gatters auf
+    bool testPassed = (actualOutput == expectedOutput);
+    
+    std::cout << "  " << gateName << ": A=" << inputA << " B=" << inputB 
+              << " => " << actualOutput;
+    if (testPassed) {
+        std::cout << " ✓";
+    } else {
+        std::cout << " ✗ (erwartet: " << expectedOutput << ")";
+    }
+    std::cout << std::endl;
+    
+    return testPassed;
+}
+
+// Hilfsfunktion: Testet ein Gatter mit 1-Eingang (NOT-Gatter)
+bool testGateNOT(Component* gate, bool input, bool expectedOutput, 
+                 const std::string& gateName) {
+    gate->setInputA(input);
+    gate->setInputB(false);  // NOT-Gatter ignoriert InputB
+    bool actualOutput = gate->getOutput();
+    
+    bool testPassed = (actualOutput == expectedOutput);
+    
+    std::cout << "  " << gateName << ": A=" << input 
+              << " => " << actualOutput;
+    if (testPassed) {
+        std::cout << " ✓";
+    } else {
+        std::cout << " ✗ (erwartet: " << expectedOutput << ")";
+    }
+    std::cout << std::endl;
+    
+    return testPassed;
 }
 
 int main() {
     std::cout << "========================================" << std::endl;
-    std::cout << "Labor 5: Speichersicherheit & Refactoring" << std::endl;
-    std::cout << "Ausgangslage: Rohe Pointer und Memory Leaks" << std::endl;
+    std::cout << "C++ Digital Simulator - Automated Tests" << std::endl;
+    std::cout << "Labor 7: GitHub Actions CI/CD Pipeline" << std::endl;
     std::cout << "========================================\n" << std::endl;
 
-    LogicEngine engine;
-    engine.setCircuitName("Leak-Test-Schaltung");
+    bool allTestsPassed = true;
+    int testCount = 0;
+    int passedCount = 0;
 
     // =====================================================================
-    // ZUSATZAUFGABE 2: Speichermanagement optimieren
+    // TEST 1: AND-Gate (Wahrheitstabelle)
     // =====================================================================
-    std::cout << "\n[ZUSATZAUFGABE 2] Speicher reservieren, BEVOR Komponenten hinzugefügt werden:" << std::endl;
-    engine.reserveComponents(10);  // Sag der Engine: "Ich werde ~10 Komponenten hinzufügen"
-    std::cout << "  (Dies verhindert Reallokationen und verbessert die Performance!)" << std::endl;
+    std::cout << "[TEST 1] AND-Gate Wahrheitstabelle:" << std::endl;
+    {
+        auto andGate = std::make_unique<AndGate>("TEST-AND");
+        
+        std::vector<std::tuple<bool, bool, bool>> testCases = {
+            {false, false, false},  // 0 & 0 = 0
+            {false, true, false},   // 0 & 1 = 0
+            {true, false, false},   // 1 & 0 = 0
+            {true, true, true}      // 1 & 1 = 1
+        };
+        
+        for (auto& [a, b, expected] : testCases) {
+            testCount++;
+            if (testGate(andGate.get(), a, b, expected, "AND")) {
+                passedCount++;
+            } else {
+                allTestsPassed = false;
+            }
+        }
+    }
+    std::cout << std::endl;
 
-    std::cout << "Baue Schaltung auf dem Heap mit Smart Pointern (Werden AUTOMATISCH gelöscht!)..." << std::endl;
+    // =====================================================================
+    // TEST 2: OR-Gate (Wahrheitstabelle)
+    // =====================================================================
+    std::cout << "[TEST 2] OR-Gate Wahrheitstabelle:" << std::endl;
+    {
+        auto orGate = std::make_unique<OrGate>("TEST-OR");
+        
+        std::vector<std::tuple<bool, bool, bool>> testCases = {
+            {false, false, false},  // 0 | 0 = 0
+            {false, true, true},    // 0 | 1 = 1
+            {true, false, true},    // 1 | 0 = 1
+            {true, true, true}      // 1 | 1 = 1
+        };
+        
+        for (auto& [a, b, expected] : testCases) {
+            testCount++;
+            if (testGate(orGate.get(), a, b, expected, "OR")) {
+                passedCount++;
+            } else {
+                allTestsPassed = false;
+            }
+        }
+    }
+    std::cout << std::endl;
 
-    // ---------------------------------------------------------
-    // MODERNER CODE: Nutzung von std::make_unique<T>()
-    // Dies erzeugt einen std::unique_ptr, der den Speicher AUTOMATISCH freigibt!
-    // ---------------------------------------------------------
-    auto g1 = std::make_unique<AndGate>("Haupt-AND");
-    auto g2 = std::make_unique<OrGate>("Haupt-OR");
-    auto g3 = std::make_unique<XorGate>("Test-XOR");
+    // =====================================================================
+    // TEST 3: NOT-Gate (Wahrheitstabelle)
+    // =====================================================================
+    std::cout << "[TEST 3] NOT-Gate Wahrheitstabelle:" << std::endl;
+    {
+        auto notGate = std::make_unique<NotGate>("TEST-NOT");
+        
+        std::vector<std::tuple<bool, bool>> testCases = {
+            {false, true},   // NOT 0 = 1
+            {true, false}    // NOT 1 = 0
+        };
+        
+        for (auto& [input, expected] : testCases) {
+            testCount++;
+            if (testGateNOT(notGate.get(), input, expected, "NOT")) {
+                passedCount++;
+            } else {
+                allTestsPassed = false;
+            }
+        }
+    }
+    std::cout << std::endl;
 
-    // WICHTIG: Eingänge setzen, BEVOR wir die Ownership übertragen!
-    // Nach std::move können wir g1, g2, g3 nicht mehr verwenden!
-    std::cout << "\nSetze Signale (VOR dem Ownership-Transfer)..." << std::endl;
-    g1->setInputA(1);
-    g1->setInputB(1);
-    
-    g2->setInputA(0);
-    g2->setInputB(1);
-    
-    g3->setInputA(1);
-    g3->setInputB(0);
+    // =====================================================================
+    // TEST 4: XOR-Gate (Wahrheitstabelle)
+    // =====================================================================
+    std::cout << "[TEST 4] XOR-Gate Wahrheitstabelle:" << std::endl;
+    {
+        auto xorGate = std::make_unique<XorGate>("TEST-XOR");
+        
+        std::vector<std::tuple<bool, bool, bool>> testCases = {
+            {false, false, false},  // 0 XOR 0 = 0
+            {false, true, true},    // 0 XOR 1 = 1
+            {true, false, true},    // 1 XOR 0 = 1
+            {true, true, false}     // 1 XOR 1 = 0
+        };
+        
+        for (auto& [a, b, expected] : testCases) {
+            testCount++;
+            if (testGate(xorGate.get(), a, b, expected, "XOR")) {
+                passedCount++;
+            } else {
+                allTestsPassed = false;
+            }
+        }
+    }
+    std::cout << std::endl;
 
-    // Ownership an die Engine übergeben (mit std::move)
-    // Nach diesen Aufrufen sind g1, g2, g3 "leere" unique_ptr's (nullptr)
-    std::cout << "\nÜbergebe Komponenten an Engine (Ownership-Transfer)..." << std::endl;
-    
-    // VOR dem move: Wir können g1 noch normal nutzen
-    std::cout << "\n[EXTRA] g1 VOR dem move:" << std::endl;
-    printGateInfo(g1.get());  // .get() gibt den rohen Zeiger zurück (nur zum Lesen!)
-    
-    // Jetzt verschieben
-    engine.addComponent(std::move(g1));
-    engine.addComponent(std::move(g2));
-    engine.addComponent(std::move(g3));
-    
-    std::cout << "\n[EXTRA] g1 NACH dem move: g1.get() = " << (g1.get() == nullptr ? "nullptr" : "???") << std::endl;
-    std::cout << "  -> Versuch, g1->getOutput() zu rufen würde abstürzen!" << std::endl;
-    std::cout << "  -> Das ist correct! g1 hat den Ownership verloren!" << std::endl;
+    // =====================================================================
+    // TEST 5: NAND-Gate (Wahrheitstabelle)
+    // =====================================================================
+    std::cout << "[TEST 5] NAND-Gate Wahrheitstabelle:" << std::endl;
+    {
+        auto nandGate = std::make_unique<NandGate>("TEST-NAND");
+        
+        std::vector<std::tuple<bool, bool, bool>> testCases = {
+            {false, false, true},   // NAND(0,0) = 1
+            {false, true, true},    // NAND(0,1) = 1
+            {true, false, true},    // NAND(1,0) = 1
+            {true, true, false}     // NAND(1,1) = 0
+        };
+        
+        for (auto& [a, b, expected] : testCases) {
+            testCount++;
+            if (testGate(nandGate.get(), a, b, expected, "NAND")) {
+                passedCount++;
+            } else {
+                allTestsPassed = false;
+            }
+        }
+    }
+    std::cout << std::endl;
 
-    // Simulation einmal durchrechnen
-    std::cout << "\nStarte Simulation:" << std::endl;
-    engine.doTick();
+    // =====================================================================
+    // TEST 6: LogicEngine-Integration
+    // =====================================================================
+    std::cout << "[TEST 6] LogicEngine-Integration:" << std::endl;
+    {
+        LogicEngine engine;
+        engine.setCircuitName("Integrations-Test");
+        
+        auto g1 = std::make_unique<AndGate>("AND-1");
+        g1->setInputA(true);
+        g1->setInputB(true);
+        
+        engine.addComponent(std::move(g1));
+        
+        std::cout << "  Engine enthält " << engine.getComponentCount() << " Komponente(n)" << std::endl;
+        
+        testCount++;
+        if (engine.getComponentCount() == 1) {
+            std::cout << "  Integration erfolgreich ✓" << std::endl;
+            passedCount++;
+        } else {
+            std::cout << "  Integration fehlgeschlagen ✗" << std::endl;
+            allTestsPassed = false;
+        }
+    }
+    std::cout << std::endl;
 
-    std::cout << "\nProgramm wird beendet..." << std::endl;
-    std::cout << "(Die Destruktoren sollten automatisch aufgerufen werden)" << std::endl;
+    // =====================================================================
+    // Abschluss und Exit-Code
+    // =====================================================================
+    std::cout << "========================================" << std::endl;
+    std::cout << "Test Summary:" << std::endl;
+    std::cout << "Bestanden: " << passedCount << " / " << testCount << std::endl;
+    std::cout << "========================================" << std::endl;
 
-    // KORREKT: Nichts zu tun! unique_ptr und der Engine-Destruktor kümmern sich darum!
-    
-    return 0;
+    if (!allTestsPassed) {
+        std::cerr << "\n[FEHLER] Mindestens ein Test fehlgeschlagen!" << std::endl;
+        std::cerr << "Die CI-Pipeline wird dies als FEHLER markieren." << std::endl;
+        return 1;  // ← EXIT-CODE 1: FEHLER (Rotes Kreuz für CI)
+    }
+
+    std::cout << "\n[SUCCESS] Alle Tests bestanden! ✓" << std::endl;
+    std::cout << "Die CI-Pipeline wird dies als ERFOLG markieren." << std::endl;
+    return 0;  // ← EXIT-CODE 0: ERFOLG (Grüner Haken für CI)
 }
