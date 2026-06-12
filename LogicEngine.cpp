@@ -1,5 +1,6 @@
 #include "LogicEngine.h"
 #include <iostream>
+#include "DFlipFlop.h"
 
 // ============================================
 // LogicEngine Implementation
@@ -50,14 +51,10 @@ void LogicEngine::addComponent(std::unique_ptr<Gate> comp) {
  * aber der Compiler generiert automatisch die richtigen virtuellen Aufrufe!
  */
 void LogicEngine::doTick() {
-    tickCount++;
-    std::cout << "\n[Tick " << tickCount << "] Evaluiere " << circuit.size() 
-              << " Komponenten:" << std::endl;
-    
-    for (auto& c : circuit) {
-        // Polymorphe Funktion: Der Compiler findet automatisch die richtige evaluate()-Methode!
-        c->evaluate();
-        std::cout << "  => Ausgabe: " << (c->getOutput() ? "true" : "false") << std::endl;
+    for (const auto& c : circuit) {
+        if (auto* flop = dynamic_cast<DFlipFlop*>(c.get())) {
+            flop->onClockTick();
+        }
     }
 }
 
