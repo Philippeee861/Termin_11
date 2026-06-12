@@ -1,4 +1,4 @@
-#include <iostream>
+/*#include <iostream>
 #include <vector>
 #include <memory>
 #include "Component.h"
@@ -34,7 +34,7 @@
  *                    |_______|
  *   DFF1 <---------+
  */
-
+/*
 int main() {
     std::cout << "========================================" << std::endl;
     std::cout << "  C++ Digital Simulator - Labor 10" << std::endl;
@@ -173,3 +173,4 @@ int main() {
     
     return 0;
 }
+*/
